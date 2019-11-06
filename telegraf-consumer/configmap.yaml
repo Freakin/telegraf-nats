@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-consumer
+  labels:
+    app: telegraf-consumer
+data:
+  telegraf.conf: |+
+    [agent]
+      collection_jitter = "0s"
+      debug = false
+      flush_interval = "$FLUSH_INTERVAL"
+      flush_jitter = "0s"
+      hostname = "$POD_NAME"
+      interval = "$INTERVAL"
+      metric_batch_size = $BATCH_SIZE
+      metric_buffer_limit = $BUFFER_LIMIT
+      omit_hostname = true
+      precision = ""
+      quiet = false
+      round_interval = true
+
+    ## INPUTS
+    [[inputs.internal]]
+      name_prefix = "telegraf."
+      [inputs.internal.tags]
+        host = "$POD_NAME"
+
+    # NATS Consumer
+    [[inputs.nats_consumer]]
+      servers = ["nats://influx-nats-client:4222"]
+      subjects = ["telegraf"]
+      queue_group = "telegraf_consumers"
+      data_format = "influx"
+         
+    # NATS metrics
+    [[inputs.prometheus]]
+      monitor_kubernetes_pods = true
+      monitor_kubernetes_pods_namespace = "brendan-dev"    
+      namedrop = ["go_*", "process_*"]
+      taginclude = [
+        "pod_name",
+        "address",
+        "release"
+      ]
+    [[processors.strings]]
+      [[processors.strings.replace]]
+        measurement = "*"
+        old = "gnatsd_"
+        new = "nats."
+
+    ## OUTPUTS
+
+    ############
+    # Simulated InfluxDB write - Enable to view error condition of NATS slow consumer
+    ############
+
+    # [[outputs.influxdb]]
+    #  urls = ["http://telegraf-influx-svc:8186"]
+    #  skip_database_creation = true
+    #  retention_policy = ""
+    #  write_consistency = "any"
+    #  timeout = "5s"
+
+
+
+    [[outputs.file]]
+      files = ["stdout"]
+      namepass = [
+        "telegraf.*",
+        "nats.*"
+      ]

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: telegraf-influx-svc
+  labels:
+    app: telegraf-influx
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8186
+      targetPort: 8186
+      name: "http-listener"
+  selector:
+    app: telegraf-influx

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: telegraf-influx
+  labels:
+    app: telegraf-influx
+spec:
+  serviceName: "telegraf-influx"
+  selector:
+    matchLabels:
+      app: "telegraf-influx"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: telegraf-influx
+    spec:
+      serviceAccount: telegraf
+      containers:
+        - name: telegraf-influx
+          image: "telegraf:1.12.3-alpine"
+          imagePullPolicy: "IfNotPresent"
+          resources:
+            limits:
+              cpu: 1
+              memory: 768Mi
+            requests:
+              cpu: 0.1
+              memory: 72Mi
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: INTERVAL
+              value: "10s"
+            - name: FLUSH_INTERVAL
+              value: "5s"
+            - name: BATCH_SIZE
+              value: "10000"
+            - name: BUFFER_LIMIT
+              value: "100000"
+            - name: DEBUG
+              value: "false"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/telegraf
+      volumes:
+        - name: config
+          configMap:
+            name: telegraf-influx

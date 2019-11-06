@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-producer
+  labels:
+    app: telegraf-producer
+data:
+  telegraf.conf: |+
+    [agent]
+      collection_jitter = "0s"
+      debug = false
+      flush_interval = "$FLUSH_INTERVAL"
+      flush_jitter = "0s"
+      hostname = "$POD_NAME"
+      interval = "$INTERVAL"
+      metric_batch_size = $BATCH_SIZE
+      metric_buffer_limit = $BUFFER_LIMIT
+      omit_hostname = true
+      precision = ""
+      quiet = false
+      round_interval = true
+
+
+      
+    ## INPUTS
+
+    [[inputs.internal]]
+      name_prefix = "telegraf."
+      [inputs.internal.tags]
+        host = "$POD_NAME"
+      
+    ## INPUTS
+    [[inputs.influxdb_listener]]
+      service_address = ":8186"
+      read_timeout = "120s"
+      write_timeout = "10s"
+      max_body_size = 1073741824
+      max_line_size = 0
+
+
+    #OUTPUTS
+    [[outputs.nats]]
+      servers = ["nats://influx-nats-client:4222"]
+      subject = "telegraf"
+      data_format = "influx"
+      namedrop = ["telegraf.*"]
+
+    [[outputs.file]]
+      files = ["stdout"]
+      namepass = ["telegraf.*"]

@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: std-ingress-class
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
+  name: telegraf-producer
+spec:
+  rules:
+    - host: telegraf-producer.<INGRESS_DOMAIN>.com
+      http:
+        paths:
+          - backend:
+              serviceName: telegraf-producer-svc
+              servicePort: 8186
+            path: /
+  tls:
+    - hosts:
+        - telegraf-producer.<INGRESS_DOMAIN>.com
